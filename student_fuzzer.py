@@ -10,6 +10,8 @@ import random
 from bug import entrypoint
 from bug import get_initial_corpus
 
+
+
 class Seed:
     """Represent an input with additional attributes"""
 
@@ -22,7 +24,8 @@ class Seed:
         self.distance: Union[int, float] = -1
         self.energy = 0.0
         self.parent = ""
-        self.m_prob = {"insert":0.33,"delete":0.33,"flip":0.34}
+        self.mut_index = 0
+        self.m_prob = {"delete":0.33,"insert":0.33,"flip":0.33}
 
     def __str__(self) -> str:
         """Returns data as string representation of the seed"""
@@ -70,12 +73,19 @@ class Mutator(Mutator):
 
     def mutate(self, inp: Seed) -> Any:  # can be str or Seed (see below)
         """Return s with a random mutation applied. Can be overloaded in subclasses."""
-        print(type(inp))
+        #print(f"data to mutate: {inp}")
+        #print(type(inp))
         prob_list = [i for i in inp.m_prob.values()]
-        print(prob_list)
+        #print(prob_list)
         mutator = random.choices(self.mutators, weights=prob_list)[0]
+        #print(mutator)
+        #print(self.mutators.index(mutator))
         m=mutator(inp.data)
-        return Seed(m)
+        s = Seed(str(m))
+        #s.parent = inp.data
+        s.mut_index = self.mutators.index(mutator)
+        s.m_prob = inp.m_prob
+        return s
 
 
 
@@ -106,25 +116,29 @@ class AdvancedMutationFuzzer(Fuzzer):
         seed = self.schedule.choose(self.population)
 
         # Stacking: Apply multiple mutations to generate the candidate
-        print(type(seed))
+        #print(type(seed))
+        c_parent = seed
         candidate = seed
         trials = min(len(candidate.data), 1 << random.randint(1, 5))
         for i in range(trials):
             candidate = self.mutator.mutate(candidate)
+        candidate.parent= c_parent
         return candidate
 
     def fuzz(self) -> str:
         """Returns first each seed once and then generates new inputs"""
+        #print(len(self.seeds))
         if self.seed_index < len(self.seeds):
             # Still seeding
             self.inp = self.seeds[self.seed_index]
             self.seed_index += 1
+            self.inputs.append(self.inp)
         else:
             # Mutating
-            self.inp = self.create_candidate()
-
-        self.inputs.append(self.inp)
-        print(self.inputs)
+            for i in range(3*len(self.population)):
+                self.inp = self.create_candidate()
+                self.inputs.append(self.inp)
+        #print(self.inputs)
         return self.inp
 
 class GreyboxFuzzer(AdvancedMutationFuzzer):
@@ -134,7 +148,7 @@ class GreyboxFuzzer(AdvancedMutationFuzzer):
         """Reset the initial population, seed index, coverage information"""
         super().reset()
         self.coverages_seen = set()
-        self.population = []  # population is filled during greybox fuzzing
+        #self.population = []  # population is filled during greybox fuzzing
 
     def run(self, runner: mf.FunctionCoverageRunner) -> Tuple[Any, str]:
         """Run function(inp) while tracking coverage.
@@ -143,74 +157,55 @@ class GreyboxFuzzer(AdvancedMutationFuzzer):
         """
         result, outcome = super().run(runner)
         new_coverage = frozenset(runner.coverage())
-        if new_coverage not in self.coverages_seen:
-            print("We have new coverage")
-            print(self.inp)
-            print(type(self.inp))
-            seed = Seed(self.inp) if isinstance(self.inp, str) else self.inp
+        if new_coverage not in self.coverages_seen and str(self.inp) not in self.population:
+            #print("We have new coverage")
+            #print(self.inp)
+            #print(type(self.inp))
+            if isinstance(self.inp, str):
+                seed = Seed(self.inp) 
+                #print("Its a string")
+            else:
+                #print("Its a Seed")
+                seed = self.inp
+                self.inp.m_prob =  {"delete":0.33,"insert":0.33,"flip":0.33}
+                p_s = seed.parent 
+                #print(f"Parent: {p_s}")
+                m_index = seed.mut_index 
+                #print(f"Population: {self.population}")
+                #print(type(self.population))
+                for s in self.population: 
+                    #print(s.data)
+                    if str(s.data) == str(p_s):
+                        #print("Got a new seed")
+                        #print(f"Parent: {s.data}")
+                        op = m_op_list[m_index]
+                        s.m_prob[op]+=0.35 
+                        for k in range(3):
+                            if k!=m_index:
+                                op_ = m_op_list[k]
+                                s.m_prob[op_]-=0.25
+                        norm = sum(list(s.m_prob.values()))
+                        for k in range(3):
+                            op_ = m_op_list[k]
+                            s.m_prob[op_]/=norm
+                        #print(s.m_prob.values())
+                        #s.m_prob.values() =s.m_prob.values()/ sum(s.m_prob.values())
             seed.coverage = runner.coverage()
             self.coverages_seen.add(new_coverage)
             self.population.append(seed)
+            
 
         return (result, outcome)
-## You can re-implement the coverage class to change how
-## the fuzzer tracks new behavior in the SUT
 
-# class MyCoverage(cv.Coverage):
-#
-#     def coverage(self):
-#         <your implementation here>
-#
-#     etc...
-
-
-## You can re-implement the runner class to change how
-## the fuzzer tracks new behavior in the SUT
-
-# class MyRunner(mf.FunctionRunner):
-#
-#     def run_function(self, inp):
-#           <your implementation here>
-#
-#     def coverage(self):
-#           <your implementation here>
-#
-#     etc...
-
-
-## You can re-implement the fuzzer class to change your
-## fuzzer's overall structure
-
-# class MyFuzzer(gbf.GreyboxFuzzer):
-#
-#     def reset(self):
-#           <your implementation here>
-#
-#     def run(self, runner: gbf.FunctionCoverageRunner):
-#           <your implementation here>
-#   etc...
-
-## The Mutator and Schedule classes can also be extended or
-## replaced by you to create your own fuzzer!
-
-
-    
-# When executed, this program should run your fuzzer for a very 
-# large number of iterations. The benchmarking framework will cut 
-# off the run after a maximum amount of time
-#
-# The `get_initial_corpus` and `entrypoint` functions will be provided
-# by the benchmarking framework in a file called `bug.py` for each 
-# benchmarking run. The framework will track whether or not the bug was
-# found by your fuzzer -- no need to keep track of crashing inputs
 if __name__ == "__main__":
     seed_inputs = get_initial_corpus()
+    m_op_list = ["delete","insert","flip"]
     #seed_inputs = [Seed(inp) for inp in seed_inputs]
     #print(seed_inputs[0].m_prob)
     greybox_fuzzer = GreyboxFuzzer(seed_inputs, Mutator(), gbf.PowerSchedule())
 
     start = time.time()
-    greybox_fuzzer.runs(mf.FunctionCoverageRunner(entrypoint), trials=100000)
+    greybox_fuzzer.runs(mf.FunctionCoverageRunner(entrypoint), trials=100000000)
     end = time.time()
 
     print(greybox_fuzzer.population)
