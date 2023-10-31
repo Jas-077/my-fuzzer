@@ -1,7 +1,7 @@
 from fuzzingbook import GreyboxFuzzer as gbf
 from fuzzingbook import Coverage as cv
 from fuzzingbook import MutationFuzzer as mf
-from fuzzingbook.Fuzzer import Fuzzer
+from fuzzingbook.Fuzzer import Fuzzer,Runner
 import traceback
 import numpy as np
 import time
@@ -87,7 +87,26 @@ class Mutator(Mutator):
         s.m_prob = inp.m_prob
         return s
 
+class MyCoverageRunner(mf.FunctionRunner):
+    def run_function(self, inp: Any) -> Any:
+        #print("HIIIIIIIIIIIIIIIIIII")
+        with cv.Coverage() as cov:
+            try:
+                print(f"Runner: {type(inp)}")
+                if isinstance(inp,str):
+                    result = super().run_function(inp)
+                else: 
+                    print(type(inp.data))
+                    result = super().run_function(inp.data)
+            except Exception as exc:
+                self._coverage = cov.coverage()
+                raise exc
 
+        self._coverage = cov.coverage()
+        return result
+
+    def coverage(self) -> Set[cv.Location]:
+        return self._coverage
 
 class AdvancedMutationFuzzer(Fuzzer):
     """Base class for mutation-based fuzzing."""
@@ -150,14 +169,14 @@ class GreyboxFuzzer(AdvancedMutationFuzzer):
         self.coverages_seen = set()
         #self.population = []  # population is filled during greybox fuzzing
 
-    def run(self, runner: mf.FunctionCoverageRunner) -> Tuple[Any, str]:
+    def run(self, runner: MyCoverageRunner) -> Tuple[Any, str]:
         """Run function(inp) while tracking coverage.
            If we reach new coverage,
            add inp to population and its coverage to population_coverage
         """
         result, outcome = super().run(runner)
         new_coverage = frozenset(runner.coverage())
-        if new_coverage not in self.coverages_seen and str(self.inp) not in self.population:
+        if new_coverage not in self.coverages_seen:
             print("We have new coverage")
             print(self.inp)
             print(type(self.inp))
@@ -205,9 +224,21 @@ if __name__ == "__main__":
     greybox_fuzzer = GreyboxFuzzer(seed_inputs, Mutator(), gbf.PowerSchedule())
 
     start = time.time()
-    greybox_fuzzer.runs(mf.FunctionCoverageRunner(entrypoint), trials=3)
+    runner = MyCoverageRunner(entrypoint)
+    greybox_fuzzer.runs(runner, trials=1000)
     end = time.time()
 
     print(greybox_fuzzer.population)
-    _, greybox_coverage = cv.population_coverage(greybox_fuzzer.inputs, entrypoint)
-    print(max(greybox_coverage))
+    pop_data = [inp.data for inp in greybox_fuzzer.inputs[1:]]
+    print(pop_data)
+    all_coverage, cumu_coverage = cv.population_coverage(pop_data, entrypoint)
+    #print(cum_coverage)
+    print(max(cumu_coverage))
+    print(runner.coverage())
+    
+    import matplotlib.pyplot as plt
+    plt.plot(cumu_coverage, label="Greybox")
+    plt.title('Coverage over time')
+    plt.xlabel('# of inputs')
+    plt.ylabel('lines covered')
+    plt.show()
