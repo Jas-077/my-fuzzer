@@ -162,3 +162,5 @@ cython_debug/
 # Ctags
 tags
 tags.lock
+
+demo.py
