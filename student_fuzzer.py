@@ -307,33 +307,32 @@ if __name__ == "__main__":
     end = time.time()
 
     print(my_fuzzer.population)
-    # pop_data = [inp.data for inp in my_fuzzer.inputs[1:]]
-    # #print(pop_data)
-    # all_coverage, cumu_coverage = cv.population_coverage(pop_data, entrypoint)
-    # #print(cum_coverage)
-    # #print(max(cumu_coverage))
-    # #print(runner.coverage())
-    
-    # import matplotlib.pyplot as plt
-    # plt.plot(cumu_coverage, label="Greybox")
-    # plt.title('Coverage over time')
-    # plt.xlabel('# of inputs')
-    # plt.ylabel('lines covered')
-    # plt.show()
-    
-    # fast_energy = fast_schedule.normalizedEnergy(my_fuzzer.population)
+    pop_data = [inp.data for inp in my_fuzzer.inputs[1:]]
+    #print(pop_data)
+    all_coverage, cumu_coverage = cv.population_coverage(pop_data, entrypoint)
+    print(max(cumu_coverage))
+    print(runner.coverage())
 
-    # for (seed, norm_energy) in zip(my_fuzzer.population, fast_energy):
-    #     #print(seed.coverage)
-    #     #print("'%s', %0.5f, %s" % (getPathID(seed.coverage),norm_energy, repr(seed.data)))
-    
-    # print("             path id 'p'           : path frequency 'f(p)'")
-    # print(my_fuzzer.schedule.path_frequency)
-    
-    # x_axis = np.arange(len(my_fuzzer.schedule.path_frequency))
-    # y_axis = list(my_fuzzer.schedule.path_frequency.values())
+    import matplotlib.pyplot as plt
+    plt.plot(cumu_coverage, label="Greybox")
+    plt.title('Coverage over time')
+    plt.xlabel('# of inputs')
+    plt.ylabel('lines covered')
+    plt.show()
 
-    # plt.bar(x_axis, y_axis)
-    # plt.xticks(x_axis)
-    # plt.ylim(0, n)
-    # plt.show()
+    fast_energy = fast_schedule.normalizedEnergy(my_fuzzer.population)
+
+    for (seed, norm_energy) in zip(my_fuzzer.population, fast_energy):
+        print(seed.coverage)
+        print("'%s', %0.5f, %s" % (getPathID(seed.coverage),norm_energy, repr(seed.data)))
+
+    print("             path id 'p'           : path frequency 'f(p)'")
+    print(my_fuzzer.schedule.path_frequency)
+
+    x_axis = np.arange(len(my_fuzzer.schedule.path_frequency))
+    y_axis = list(my_fuzzer.schedule.path_frequency.values())
+
+    plt.bar(x_axis, y_axis)
+    plt.xticks(x_axis)
+    plt.ylim(0, n)
+    plt.show()
