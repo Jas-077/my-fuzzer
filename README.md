@@ -19,6 +19,11 @@ To execute the fuzzer on the bug in `bug.py`, just run:
 ```
 python student_fuzzer.py
 ```
+Further, the 
+```
+buggy.py
+```
+program can be used to reproduce the plots given in the report. The ```example_bug.py``` bug file is the file shown in the report that is used for comparison of results obtained from Boosted Greybox and My Fuzzer.
 
-Several example bugs are included in the `examples` directory.
-To run the fuzzer on an example bug, copy e.g. `examples/0/bug.py` to the base directory of this repository before running the fuzzer with the command above.
+The ```different_trials``` folder is for storing the array values for producing the plots
+

@@ -1,3 +1,8 @@
+'''
+Name - Jasjeet Singh Siddhu
+Metric number - A0274722A
+NUSnet id - E1124468
+'''
 from fuzzingbook import GreyboxFuzzer as gbf
 from fuzzingbook import Coverage as cv
 from fuzzingbook import MutationFuzzer as mf
@@ -9,6 +14,10 @@ from typing import List, Set, Any, Tuple, Dict, Union, Callable
 import random
 from bug import entrypoint
 from bug import get_initial_corpus
+
+# from example_bug import entrypoint
+# from example_bug import get_initial_corpus
+
 import pickle
 import hashlib
 
@@ -310,7 +319,7 @@ class CountingGreyboxFuzzer(GreyboxFuzzer):
 if __name__ == "__main__":
     seed_inputs = get_initial_corpus()
     m_op_list = ["delete","insert","flip"]
-    n=15000
+    n=99999999999999999
     #seed_inputs = [Seed(inp) for inp in seed_inputs]
     #print(seed_inputs[0].m_prob)
     fast_schedule = AFLFastSchedule(5)
@@ -320,39 +329,39 @@ if __name__ == "__main__":
     my_fuzzer.runs(runner, trials=n)
     end = time.time()
 
-    print(my_fuzzer.population)
-    pop_data = []
-    for inp in my_fuzzer.inputs[1:]:
-        if isinstance(inp,str):
-            pop_data.append(inp)
-        else: 
-            pop_data.append(inp.data)
-    #print(pop_data)
-    all_coverage, cumu_coverage = cv.population_coverage(pop_data, entrypoint)
-    print(max(cumu_coverage))
-    #print(runner.coverage())
+    # print(my_fuzzer.population)
+    # pop_data = []
+    # for inp in my_fuzzer.inputs[1:]:
+    #     if isinstance(inp,str):
+    #         pop_data.append(inp)
+    #     else: 
+    #         pop_data.append(inp.data)
+    # #print(pop_data)
+    # all_coverage, cumu_coverage = cv.population_coverage(pop_data, entrypoint)
+    # print(max(cumu_coverage))
+    # #print(runner.coverage())
 
-    import matplotlib.pyplot as plt
-    #np.save("too_big/myfuz_cmu10.npy",cumu_coverage)
-    plt.plot(cumu_coverage, label="Greybox")
-    plt.title('Coverage over time')
-    plt.xlabel('# of inputs')
-    plt.ylabel('lines covered')
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # #np.save("too_big/myfuz_cmu10.npy",cumu_coverage)
+    # plt.plot(cumu_coverage, label="Greybox")
+    # plt.title('Coverage over time')
+    # plt.xlabel('# of inputs')
+    # plt.ylabel('lines covered')
+    # plt.show()
 
-    fast_energy = fast_schedule.normalizedEnergy(my_fuzzer.population)
+    # fast_energy = fast_schedule.normalizedEnergy(my_fuzzer.population)
 
-    for (seed, norm_energy) in zip(my_fuzzer.population, fast_energy):
-        #print(seed.coverage)
-        print("%0.5f, %s" % (norm_energy, repr(seed.data)))
+    # for (seed, norm_energy) in zip(my_fuzzer.population, fast_energy):
+    #     #print(seed.coverage)
+    #     print("%0.5f, %s" % (norm_energy, repr(seed.data)))
 
-    print("             path id 'p'           : path frequency 'f(p)'")
-    print(my_fuzzer.schedule.path_frequency)
+    # print("             path id 'p'           : path frequency 'f(p)'")
+    # print(my_fuzzer.schedule.path_frequency)
 
-    x_axis = np.arange(len(my_fuzzer.schedule.path_frequency))
-    y_axis = list(my_fuzzer.schedule.path_frequency.values())
+    # x_axis = np.arange(len(my_fuzzer.schedule.path_frequency))
+    # y_axis = list(my_fuzzer.schedule.path_frequency.values())
 
-    plt.bar(x_axis, y_axis)
-    plt.xticks(x_axis)
-    plt.ylim(0, n)
-    plt.show()
+    # plt.bar(x_axis, y_axis)
+    # plt.xticks(x_axis)
+    # plt.ylim(0, n)
+    # plt.show()
